@@ -22,3 +22,39 @@ z <- Reduce(intersect, list(x, y))
 groundDPS <- dd$groundAttack*dd$gaMultiplier/dd$groundCD
 airDPS <- dd$airAttack*dd$aaMultiplier/dd$airCD
 res <- rbind(dd$name, groundDPS, airDPS)
+
+
+## Using DPLYR: Select
+x <- select(dd, name, groundAttack, airAttack)
+x <- select(dd, c(name, groundAttack, airAttack))
+x <- c(1, 9, 17, 25, 33)
+x <- selct(dd, x)
+
+## Using DPLYR: Filter
+x <- filter(dd, race == "zerg" & type == "unit" & transformation == 0)
+
+## Using DPLYR: Arrange
+x <- filter(dd, race == "zerg" & type == "unit" & transformation == 0) %>% 
+     arrange(desc(groundAttack), desc(airAttack))
+
+x <- select(dd, 1:11) %>%
+     filter(race ==  "zerg" & type == "unit" & transformation == 0) %>%
+     arrange(desc(minerals), desc(gas), desc(buildTime), desc(supply))
+
+## Using DPLYR: Rename a column
+x <- rename(dd, RACE = race, TYPE = type)
+
+## Using DPLYR: Mutate
+x <- mutate(dd, groundDPS = groundAttack*gaMultiplier/groundCD, 
+                airDPS = airAttack*aaMultiplier/groundCD)
+
+## Using DPLYR: Transmute (same as mutate but drops not mutated columns)
+x <- transmute(dd, groundDPS = groundAttack*gaMultiplier/groundCD)
+
+
+## Using DPLYR: Group By & Summarize (it drops colums not used)
+x <- select(dd, 1:8) %>%
+     group_by(minerals) %>%
+     summarize(avgGasCost = mean(gas, na.rm = TRUE), 
+               avgBuildTime = mean(buildTime, na.rm = TRUE))
+
