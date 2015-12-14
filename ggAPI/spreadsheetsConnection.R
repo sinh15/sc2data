@@ -9,6 +9,8 @@ factorColumnsSimpleDF <- function(dd) {
     dd[[10]] <- as.factor(dd[[10]])
     dd[[11]] <- as.factor(dd[[11]])
     dd[[12]] <- as.factor(dd[[12]])
+    dd[[13]] <- gsub("TRUE", "T", dd[[13]])
+    dd[[14]] <- gsub("TRUE", "T", dd[[14]])
     dd[[13]] <- as.factor(dd[[13]])
     dd[[14]] <- as.factor(dd[[14]])
     dd[[21]] <- as.factor(dd[[21]])
@@ -30,7 +32,7 @@ castNormalDF <- function(dd) {
     for(i in c(1:col)) {
         dataFrame[, i] <- dd[[i]]
     }
-        
+    
     dataFrame
 }
 
@@ -47,7 +49,7 @@ getSimpleDF <- function() {
 ## ============================== ##
 ## READ: Full Data Frame from SS  ##
 ## ============================== ##
-readDataFrameSS <- function () {
+readSimpleDataFrameSS <- function () {
     ## get spreadsheet
     ss <- getSimpleDF()    
     
@@ -64,15 +66,18 @@ readDataFrameSS <- function () {
 ## ============================== ##
 ## PRINT: Full Data Frame to SS   ##
 ## ============================== ##
-sendDataFrameSS <- function (dd) {
+writeSimpleDataFrameSS <- function (dd) {
     ## getSheet
     ss <- getSimpleDF()  
     
     ### create empty array to clean sheet data
     data <- gs_read_csv(ss, "simpleDF_1", verbose = TRUE)
-    x <- matrix("", nrow = dim(data)[1]+1, ncol = dim(data)[2])
-    gs_edit_cells(ss, "simpleDF_1", input = x, anchor = "A1")
+    if(length(data) != 0) {
+        x <- matrix("", nrow = dim(data)[1]+1, ncol = dim(data)[2])
+        gs_edit_cells(ss, "simpleDF_1", input = x, anchor = "A1")
 
+    }
+    
     ## send new data to sheet
     gs_edit_cells(ss, "simpleDF_1", input = dd, anchor = "A1")
 }
@@ -90,33 +95,44 @@ synchronizeSimpleDF <- function(dd, action) {
     ## Compute differences
     if(action == "upload") {
         missingGames <- match(dd[, 1], data[[1]])
-        dd <- uploadGames(dd, missingGames, length(data[[1]]))
-        
+        uploadGames(dd, missingGames, ss)
     }
     else if(action == "download") {
         missingGames <- match(data[[1]], dd[, 1])
-        dd <- downloadGames(dd, missingGames)
+        dd <- downloadGames(dd, missingGames, ss)
+        
+        dd
+    }
+}
+
+## ============================== ##
+## DOWNLOAD GAMES                 ##
+## ============================== ##
+downloadGames <- function(dd, missingGames, ss) {
+    ## read full contents and transform
+    data <- gs_read_csv(ss, "simpleDF_1", verbose = TRUE)
+    missing <- which(is.na(missingGames))
+    data <- data[missing, ]
+    data <- factorColumnsSimpleDF(data)
+    data <- castNormalDF(data)
+    
+    if(length(missing) != 0) {
+        for(i in c(1:length(missing))) {
+            dd <- rbind(dd, data[missing[i], ])
+        }
     }
     
     dd
 }
 
 ## ============================== ##
-## DOWNLOAD GAMES                 ##
+## UPLOAD GAMES                   ##
 ## ============================== ##
-downloadGames <- function(dd, missingGames) {
-    ## get spreadsheet
-    ss <- getSimpleDF()    
-    
-    ## read full contents and transform
-    data <- gs_read_csv(ss, "simpleDF_1", verbose = TRUE)
-    data <- factorColumnsSimpleDF(data)
-    data <- castNormalDF(data)
-    
+uploadGames <- function(dd, missingGames, ss) {
+    ## upload games that are missing
     missing <- which(is.na(missingGames))
     for(i in c(1:length(missing))) {
-        dd <- rbind(dd, data[i, ])
+        dd[, "p1_race"] <- as.character(dd[, "p1_race"])
+        gs_add_row(ss, "simpleDF_1", input = dd[missing[i], ])
     }
-    
-    dd
 }

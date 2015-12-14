@@ -1,7 +1,7 @@
 ## ============================== ##
 ## Enable Libraries               ##
 ## ============================== ##
-library(googleSheets)
+library(googlesheets)
 library(jsonlite)
 library(dplyr)
 
@@ -11,6 +11,7 @@ library(dplyr)
 ## ============================== ##
 ### sergi.porras.pages@gmail.com
 gs_auth()
+gs_auth(new_user = TRUE)
 
 
 ## ============================== ##
