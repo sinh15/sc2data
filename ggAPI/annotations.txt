@@ -1,0 +1,93 @@
+======================================================
+## gameJSON[[5]] --> LOST
+======================================================
+- List of two. Each entry one of the players.
+- x <- gameJSON[["Lost"]][[1/2]]
+- Game Time In seconds/10+1 => number of rows for each player
+- First 100 lost -> 4:20 minutes
+                 -> 260 seconds
+                 -> 260/10 = 26 row.
+                 -> 26+1 (initial status) = 27 row.
+- 27 row -> (27-1)*10 = 260 seconds.
+
+======================================================
+## gameJSON[[6]] --> ARMIES_BY_FRAME
+======================================================
+- List of two. Each entry one of the players
+- x <- gameJSON[["armies_by_frame"]][[1/2]]
+- Returns a matrix of three columns
+    - Unit name
+    - Frame in which it was craeted (completed)?
+    - Frame in which it died?
+- Transformed units just change the name. Not the creation/Death time.
+- Then the name does not mean when were they transformed!!
+
+======================================================
+## gameJSON[[8]] --> UPGRADES
+======================================================
+- List of two. Each entry one of the players
+- x <- gameJSON[["upgrades"]][[1/2]]
+- Returns a matrix of two columns. Name of the upgrades and frame?
+
+======================================================
+## gameJSON[[9]] --> WORKERS ACTIVE COUNT
+======================================================
+- List of two. Each entry one of the players.
+- x <- gameJSON[["WorkersActiveCount"]][[1/2]]
+- Returns an array. Max elements = Game Time In seconds/10+1
+- 3d element => (3-1)*10 = 20 seconds.
+      - Number of workers at 20 seconds mark.
+- Carefull with this value because for zerg, building, reduces one.
+  No way to know if kill / building?¿ TT
+
+======================================================
+## gameJSON[[11]] --> MINERALS CURRENT
+======================================================
+- List of two. Each entry one of the players.
+- x <- gameJSON[["MineralsCurrent"]][[1/2]]
+- Returns an array. Max elements = Game Time In seconds/10+1
+- 3d element => (3-1)*10 = 20 seconds.
+      - Number of minearls at 20 seconds mark.
+
+======================================================
+## gameJSON[[12]] --> MINERALS COLLECTION RATE
+======================================================
+- List of two. Each entry one of the players.
+- x <- gameJSON[["MineralsCollectionRate"]][[1/2]]
+- Returns an array. Max elements = Game Time In seconds/10+1
+- 3d element => (3-1)*10 = 20 seconds.
+      - Number of minerals collection rate at 20 seconds mark.
+
+
+
+
+
+===========================================================================================
+GENERAL DOUBTS TO ASK TO THE GUY WHO DID THE API
+===========================================================================================
+- How to translate from frame to ingame time?¿ TT
+
+- Whats the scouting number?
+  x <- gameJSON[["scouting"]][[1/2]] returns the scouting value for each player
+
+- Whats each value of engagements? How to read?
+  x <- gameJSON[["engagements"]] returns matrix ready to view
+
+- Aggressions. How to read them?
+  x <- gameJSON[["aggrsesions"]][[1/2]] returns matrix ready to print
+
+- macro, tmacro ?¿?¿??¿?¿?¿?¿?¿?
+
+- 
+
+
+
+
+- It will be so nice to have frames of buildings complete?¿
+
+
+==================================
+Json beautifier
+==================================
+http://codebeautify.org/jsonviewer
+

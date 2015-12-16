@@ -93,6 +93,7 @@ synchronizeSimpleDF <- function(dd, action) {
     data <- gs_read(ss, "simpleDF_1", range = cell_cols(1))
     
     ## Compute differences
+    
     if(action == "upload") {
         missingGames <- match(dd[, 1], data[[1]])
         uploadGames(dd, missingGames, ss)

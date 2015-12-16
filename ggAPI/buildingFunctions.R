@@ -49,7 +49,31 @@ addGameSimpleDF <- function (dd, gameJSON) {
             entities[, "identity"][, "gateway"][1],
             entities[, "identity"][, "gateway"][2],
             entities[, "identity"][, "current_league_1v1"][1],
-            entities[, "identity"][, "current_league_1v1"][2]
+            entities[, "identity"][, "current_league_1v1"][2],
+            entities[["apm"]][1],
+            entities[["apm"]][2],
+            entities[["spending_skill"]][1],
+            entities[["spending_skill"]][2],
+            entities[["spending_quotient"]][1],
+            entities[["spending_quotient"]][2],
+            entities[["race_macro"]][1],
+            entities[["race_macro"]][2],
+            entities[["max_creep_spread"]][1],
+            entities[["max_creep_spread"]][2],
+            entities[["summary"]][, "average_unspent_resources"][1],
+            entities[["summary"]][, "average_unspent_resources"][2],
+            entities[["summary"]][, "resource_collection_rate"][1],
+            entities[["summary"]][, "resource_collection_rate"][2],
+            entities[["summary"]][, "workers_created"][1],
+            entities[["summary"]][, "workers_created"][2],
+            entities[["summary"]][, "units_trained"][1],
+            entities[["summary"]][, "units_trained"][2],
+            entities[["summary"]][, "killed_unit_count"][1],
+            entities[["summary"]][, "killed_unit_count"][2],
+            entities[["summary"]][, "structures_built"][1],
+            entities[["summary"]][, "structures_built"][2],
+            entities[["summary"]][, "structures_razed_count"][1],
+            entities[["summary"]][, "structures_razed_count"][2]
         )
     
     ### add row and return
@@ -58,7 +82,11 @@ addGameSimpleDF <- function (dd, gameJSON) {
     names(df) <- 
         c("gameID", "gameDate", "gameCategory", "gameType", "gameDuration", "gameDurationM", "gameMapID",
           "gameMapName", "replayID", "replayHash", "replayURL", "matchup", "p1_race", "p2_race", "p1_win", "p2_win",
-          "p1_ID", "p2_ID", "p1_bnetID", "p2_bnetID", "p1_name", "p2_name", "p1_region", "p2_region", "p1_league", "p2_league")
+          "p1_ID", "p2_ID", "p1_bnetID", "p2_bnetID", "p1_name", "p2_name", "p1_region", "p2_region", "p1_league", "p2_league",
+          "p1_apm", "p2_apm", "p1_spending_skill", "p2_spending_skill", "p1_spending_quotient", "p2_spending_quotient", "p1_macro", "p2_macro",
+          "p1_creep", "p2_creep", "p1_avgUnspent", "p2_avgUnspent", "p1_avg_collected", "p2_avg_collected",
+          "p1_workers", "p2_workers", "p1_units", "p2_units", "p1_units_killed", "p2_units_killed", 
+          "p1_buildings", "p2_buildings", "p1_buildings_razed", "p2_buildings_razed")
     
     ## return df
     df
