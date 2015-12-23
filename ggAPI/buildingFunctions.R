@@ -29,7 +29,7 @@ addGameSimpleDF <- function (dd, gameJSON) {
             gameJSON[["category"]],
             gameJSON[["game_type"]],
             gameJSON[["duration_seconds"]],
-            round(gameJSON[["duration_seconds"]]/60, 2),
+            round(gameJSON[["duration_seconds"]]/1.4/60, 2),
             gameJSON[["map"]][["id"]],
             gameJSON[["map"]][["name"]],
             gameJSON[["replays"]][, 1],
@@ -77,8 +77,10 @@ addGameSimpleDF <- function (dd, gameJSON) {
         )
     
     ### add row and return
-    df <- rbind.data.frame(dd, gameDATA)
-    x <- nrow(df)
+    gameDATA <- as.data.frame(gameDATA)
+    ## pending to delte this names cast is duplicated work
+    names(gameDATA) <- names(dd)
+    df <- rbind(dd, gameDATA)
     names(df) <- 
         c("gameID", "gameDate", "gameCategory", "gameType", "gameDuration", "gameDurationM", "gameMapID",
           "gameMapName", "replayID", "replayHash", "replayURL", "matchup", "p1_race", "p2_race", "p1_win", "p2_win",

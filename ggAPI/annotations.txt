@@ -127,6 +127,7 @@ GENERAL DOUBTS TO ASK TO THE GUY WHO DID THE API
 
 - It will be so nice to have frames of buildings complete?¿
 
+- 1.4 ratio of faster time to normal time. All the second should be divided by the new time
 
 ==================================
 Json beautifier

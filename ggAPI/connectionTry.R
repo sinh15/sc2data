@@ -3,15 +3,19 @@ library(jsonlite)
 
 ## Load Game: Simple Details
 gameJSON <- "http://api.ggtracker.com/api/v1/matches/6306072.json"
+gameJSON <- "http://api.ggtracker.com/api/v1/matches/6336526.json"
 
 ## Load Game: High Details
 gameJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6306072"
+adJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6336526"
 
 ## Load Player Details
 gameJSON <-  "http://api.ggtracker.com/api/v1/identities/1586656.json"
 
 ## Actual CALL to API
 gameJSON <- fromJSON(gameJSON)
+adJSON <- fromJSON(adJSON)
+
 
 #Check Variables & Class of each one
 names(gameJSON)
