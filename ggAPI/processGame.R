@@ -4,6 +4,7 @@
 processGame <- function(id, dd) {
     ## 1) Read simple match details
     gameJSON <- paste0("http://api.ggtracker.com/api/v1/matches/", id, ".json")
+    gameJSON <- "http://api.ggtracker.com/api/v1/matches/6336526.json"
     gameJSON <- fromJSON(gameJSON)
     
     ## at the moment we will rbind on the previous function, on the future we will not
@@ -11,6 +12,7 @@ processGame <- function(id, dd) {
     
     ## 2) Read Advanced Match Details
     adJSON <- paste0("https://gg2-matchblobs-prod.s3.amazonaws.com/", id)
+    adJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6336526"
     adJSON <- fromJSON(adJSON)
     
     
@@ -28,17 +30,17 @@ processGame <- function(id, dd) {
     pID_2 <- dd[dd$gameID == 6336526, "p2_ID"]
     df1[, 1] <- dd[dd$gameID == 6336526, "p1_ID"]
     df2[, 1] <- dd[dd$gameID == 6336526, "p2_ID"]
-    names(df1)[1] <- "gameID"
-    names(df2)[1] <- "gameID"
+    names(df1)[1] <- "game"
+    names(df2)[1] <- "game"
     
     
     ## COL(2): Name of the player
-    df1[, 2] <- dd[dd$gameID == 6336526, "p1_name"]
-    df2[, 2] <- dd[dd$gameID == 6336526, "p2_name"]
+    df1$name <- dd[dd$gameID == 6336526, "p1_name"]
+    df2$name <- dd[dd$gameID == 6336526, "p2_name"]
     
     ## COL(3): Minute of game
     df1[, 3] <- mutate(as.data.frame(int), minutes = int*30/60) %>% group_by(minutes) %>% summarize(max(minutes)) %>% select(minutes)
-    df2[, 3] <- df1[, 3]
+    df2$minutes <- df1[, 3]
     
     ## COL(4): Resources Lost x interval + position of players
     resourcesLost <- extractMaxs10SecondsBlocks(adJSON, int, 5)
@@ -51,46 +53,60 @@ processGame <- function(id, dd) {
         p2 <- 1
     }
     
-    df1[, 4] <- resourcesLost[[p1]]
-    df2[, 4] <- resourcesLost[[p2]]
+    df1$lost <- resourcesLost[[p1]]
+    df2$lost <- resourcesLost[[p2]]
     
     ## COL(5): Active Workers
     activeWorkers <- extractMaxs10SecondsBlocks(adJSON, int, 9)
-    df1[, 5] <- activeWorkers[[p1]]
-    df2[, 5] <- activeWorkers[[p2]]
+    df1$workers <- activeWorkers[[p1]]
+    df2$workers <- activeWorkers[[p2]]
     
     ## COL(6): Current Minerals
     currentMinerals <- extractMaxs10SecondsBlocks(adJSON, int, 11)
-    df1[, 6] <- currentMinerals[[p1]]
-    df2[, 6] <- currentMinerals[[p2]]
+    df1$minerals <- currentMinerals[[p1]]
+    df2$minerals <- currentMinerals[[p2]]
     
     ## COL(7): Current Minerals Collection Rate
     mineralsCollectionRate <- extractMaxs10SecondsBlocks(adJSON, int, 12)
-    df1[, 7] <- mineralsCollectionRate[[p1]]
-    df2[, 7] <- mineralsCollectionRate[[p2]]
+    df1$minerals_cr <- mineralsCollectionRate[[p1]]
+    df2$minerals_cr <- mineralsCollectionRate[[p2]]
     
     ## COL(8): Current Vespene Gas
     currentVespene <- extractMaxs10SecondsBlocks(adJSON, int, 15)
-    df1[, 8] <- currentVespene[[p1]]
-    df2[, 8] <- currentVespene[[p2]]
+    df1$vespene <- currentVespene[[p1]]
+    df2$vespene <- currentVespene[[p2]]
     
     ## COL(9): Current Vespene Gas Collection Rate
     vespeneCollectionRate <- extractMaxs10SecondsBlocks(adJSON, int, 17)
-    df1[, 9] <- vespeneCollectionRate[[p1]]
-    df2[, 9] <- vespeneCollectionRate[[p2]]
+    df1$vespene_cr <- vespeneCollectionRate[[p1]]
+    df2$vespene_cr <- vespeneCollectionRate[[p2]]
     
     ## COL(10): Current Supply & Max Supply
+    ## check if orther of data is crompromized
     supplyData <- supplyUsage(adJSON, int, 19)
-    df1$supply <- supplyData$v1
-    df2$supply <- supplyData$v2
+    if(names(adJSON[[19]])[1] == pID_1) {
+        df1$supply <- supplyData$v1
+        df2$supply <- supplyData$v2    
+    } else {
+        df1$supply <- supplyData$v2
+        df2$supply <- supplyData$v1  
+    }
     
-    upgrades <- readUpgrades()
-
+    ## COL(11): Player Bases
+    bInfo <- basesInfo(adJSON, int, 16, dd[dd$gameID == 6336526, "gameDuration"])
+    if(adJSON[[16]][[1]][[1]] == pID_1) {
+        df1$bases <- bInfo$p1
+        df2$bases <- bInfo$p2
+    } else {
+        df1$bases <- bInfo$p1
+        df2$bases <- bInfo$p2
+    }
+    
     
     ## Row of frames => frame/(16*30)
     ## 16 frames per second / 60 (seconds a minute) * 0.5 (intervals)
     ## floor() for completed integer
-    ## floor(4783/(16*30))
+    ## floor(4783/(16*30)+1)
 }
 
 ## ============================== ##
@@ -127,3 +143,66 @@ supplyUsage <- function(adJSON, int, columnIndex) {
     
     supply
 }
+
+## ============================== ##
+## CAPTURE BASES INFORMATION      ##
+## ============================== ##
+basesInfo <- function(adJSON, int, columnIndex, gameDuration) {
+    # game duration -> to frames
+    durationFrames <- gameDuration*16
+    
+    #basesInfo: num_bases, bases_destroyed, bases_cancelled
+    basesInfo <- list()
+    
+    # (compute created / destroyed)
+    for(i in c(1:length(adJSON[[columnIndex]]))) {
+        bAlive <- array(data = rep(0, max(int)+1), dim = max(int)+1)
+        bDestroyed <- array(data = rep(0, max(int)+1), dim = max(int)+1)
+        bCancelled <- array(data = rep(0, max(int)+1), dim = max(int)+1)
+        
+        #extract each player bases information
+        xi <- adJSON[[columnIndex]][[i]][[2]]
+        for(j in c(1:dim(xi)[1])) {
+            if(!is.na(xi[j, 1])) {
+                pos <- floor(xi[j, 1]/(16*30)+1)
+                bAlive[pos] <- bAlive[pos] + 1
+                if(xi[j, 2] < durationFrames) {
+                    pos <- floor(xi[j, 2]/(16*30)+1)
+                    bDestroyed[pos] <- bDestroyed[pos] + 1
+                }
+            } else {
+                pos <- floor(xi[j, 2]/(16*30)+1)
+                bCancelled[pos] <- bCancelled[pos] +1
+            }
+        }
+        
+        #adjunt numbers
+        alive <- 0;
+        destroyed <- 0;
+        cancelled <- 0;
+        for(j in c(1:max(int+1))) {
+            alive <- alive + bAlive[j] - bDestroyed[j]
+            destroyed <- destroyed + bDestroyed[j]
+            cancelled <- cancelled + bCancelled[j]
+            bAlive[j] <- alive
+            bDestroyed[j] <- destroyed
+            bCancelled[j] <- cancelled
+        }
+        
+        ## Add to solution
+        if(i == 1) {
+            pBases <- data.frame(num_bases = bAlive, bases_destroyed = bDestroyed, bases_cancelled = bCancelled)
+            basesInfo$p1 <- pBases
+        } else {
+            pBases <- data.frame(num_bases = bAlive, bases_destroyed = bDestroyed, bases_cancelled = bCancelled)
+            basesInfo$p2 <- pBases
+        }
+        
+    }
+    # (end compute created / destroyed)
+    
+    #return statement
+    basesInfo
+}
+
+
