@@ -15,9 +15,13 @@ processGame <- function(id, dd) {
     adJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6336526"
     
     #ALL UPGRADES & UNITS => Zerg/terran/protoss
-    adJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345542"
-    adJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345614"
-    adJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345638"
+    zergJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345542"
+    terranJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345614"
+    protossJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345638"
+    
+    zergJSON <- fromJSON(zergJSON)
+    terranJSON <- fromJSON(terranJSON)
+    protossJSON <- fromJSON(protossJSON)
     
     ## read advanced details
     adJSON <- fromJSON(adJSON)
@@ -161,39 +165,28 @@ basesInfo <- function(adJSON, int, columnIndex, gameDuration) {
     #basesInfo: num_bases, bases_destroyed, bases_cancelled
     basesInfo <- list()
     
-    # (compute created / destroyed)
+    # (compute created / destroyed / cancelled)
     for(i in c(1:length(adJSON[[columnIndex]]))) {
-        bAlive <- array(data = rep(0, max(int)+1), dim = max(int)+1)
-        bDestroyed <- array(data = rep(0, max(int)+1), dim = max(int)+1)
-        bCancelled <- array(data = rep(0, max(int)+1), dim = max(int)+1)
-        
-        #extract each player bases information
+        ## XI: get player data frame
         xi <- adJSON[[columnIndex]][[i]][[2]]
-        for(j in c(1:dim(xi)[1])) {
-            if(!is.na(xi[j, 1])) {
-                pos <- floor(xi[j, 1]/(16*30)+1)
-                bAlive[pos] <- bAlive[pos] + 1
-                if(xi[j, 2] < durationFrames) {
-                    pos <- floor(xi[j, 2]/(16*30)+1)
-                    bDestroyed[pos] <- bDestroyed[pos] + 1
-                }
-            } else {
-                pos <- floor(xi[j, 2]/(16*30)+1)
-                bCancelled[pos] <- bCancelled[pos] +1
-            }
-        }
         
-        #adjunt numbers
-        alive <- 0;
-        destroyed <- 0;
-        cancelled <- 0;
-        for(j in c(1:max(int+1))) {
-            alive <- alive + bAlive[j] - bDestroyed[j]
-            destroyed <- destroyed + bDestroyed[j]
-            cancelled <- cancelled + bCancelled[j]
-            bAlive[j] <- alive
-            bDestroyed[j] <- destroyed
-            bCancelled[j] <- cancelled
+        ## INTERVALS: bases created, destroyed, cancelled
+        alive <- as.array(ifelse(!is.na(xi[, 1]), floor(xi[, 1]/(16*30)+1), NA))
+        destroyed <- ifelse(!is.na(xi[, 1]) & xi[, 2] < durationFrames, floor(xi[, 2]/(16*30)+1), NA)
+        cancelled <- ifelse(is.na(xi[, 1]), floor(xi[, 2]/(16*30)+1), NA)
+        
+        ## ADD all bases data
+        len <- max(int)+1
+        bAlive <- array(data = rep(0, len), dim = len)
+        bDestroyed <- array(data = rep(0, len), dim = len)
+        bCancelled <- array(data = rep(0, len), dim = len)
+        for(j in c(1:length(alive))) {
+            if(!is.na(alive[j])) bAlive[alive[j]:len] <- 1+bAlive[alive[j]:len]
+            if(!is.na(destroyed[j])) {
+                bAlive[destroyed[j]:len] <- bAlive[destroyed[j]:len]-1
+                bDestroyed[destroyed[j]:len] <- 1+bDestroyed[destroyed[j]:len]
+            }
+            if(!is.na(cancelled[j])) bCancelled[cancelled[j]:len] <- 1+bCancelled[cancelled[j]:len]
         }
         
         ## Add to solution
@@ -206,7 +199,6 @@ basesInfo <- function(adJSON, int, columnIndex, gameDuration) {
         }
         
     }
-    # (end compute created / destroyed)
     
     #return statement
     basesInfo

@@ -133,7 +133,7 @@ uploadGames <- function(dd, missingGames, ss) {
     ## upload games that are missing
     missing <- which(is.na(missingGames))
     for(i in c(1:length(missing))) {
-        dd[, "p1_race"] <- as.character(dd[, "p1_race"])
+        dd[i, "p1_race"] <- as.character(dd[i, "p1_race"])
         gs_add_row(ss, "simpleDF_1", input = dd[missing[i], ])
     }
 }
