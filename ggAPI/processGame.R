@@ -13,6 +13,13 @@ processGame <- function(id, dd) {
     ## 2) Read Advanced Match Details
     adJSON <- paste0("https://gg2-matchblobs-prod.s3.amazonaws.com/", id)
     adJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6336526"
+    
+    #ALL UPGRADES & UNITS => Zerg/terran/protoss
+    adJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345542"
+    adJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345614"
+    adJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345638"
+    
+    ## read advanced details
     adJSON <- fromJSON(adJSON)
     
     
