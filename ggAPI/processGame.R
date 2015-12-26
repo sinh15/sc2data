@@ -85,21 +85,22 @@ processGame <- function(id, dd) {
     ## check if orther of data is crompromized
     supplyData <- supplyUsage(adJSON, int, 19)
     if(names(adJSON[[19]])[1] == pID_1) {
-        df1$supply <- as.matrix(supplyData$v1)
-        df2$supply <- as.matrix(supplyData$v2)    
+        df1$supply <- supplyData$v1
+        df2$supply <- supplyData$v2   
     } else {
-        df1$supply <- as.matrix(supplyData$v2)
-        df2$supply <- as.matrix(supplyData$v1)
+        df1$supply <- supplyData$v2
+        df2$supply <- supplyData$v1
     }
     
     ## COL(11): Player Bases
-    bInfo <- basesInfo(adJSON, int, 16, dd[dd$gameID == 6336526, "gameDuration"])
+    gameDuration <- dd[dd$gameID == 6336526, "gameDuration"]*16
+    bInfo <- basesInfo(adJSON, int, 16, gameDuration)
     if(adJSON[[16]][[1]][[1]] == pID_1) {
-        df1$bases <- as.matrix(bInfo$p1)
-        df2$bases <- as.matrix(bInfo$p2)
+        df1$bases <- bInfo$p1
+        df2$bases <- bInfo$p2
     } else {
-        df1$bases <- as.matrix(bInfo$p1)
-        df2$bases <- as.matrix(bInfo$p2)
+        df1$bases <- bInfo$p1
+        df2$bases <- bInfo$p2
     }
     
     ## COL(12): Upgrades
@@ -107,12 +108,18 @@ processGame <- function(id, dd) {
         races <- c(as.character(dd[dd$gameID == 6336526, "p1_race"]), as.character(dd[dd$gameID == 6336526, "p2_race"]))
     } else races <- c(as.character(dd[dd$gameID == 6336526, "p2_race"]), as.character(dd[dd$gameID == 6336526, "p1_race"]))
     upgradesInfo <- computeUpgrades(adJSON, int, 8, races)
-    df1$upgrades <- as.matrix(upgradesInfo[[p1]])
-    df2$upgrades <- as.matrix(upgradesInfo[[p2]])
+    df1$upgrades <- upgradesInfo[[p1]]
+    df2$upgrades <- upgradesInfo[[p2]]
     
     ## COL(13): Army info
+    units <- computeArmy(adJSON, int, 6, races, gameDuration)
+    df1$units <- units[[p1]]
+    df2$units <- units[[p2]]
     
-    
+    ## FLATTEN DFs
+    df1 <- flatten(df1)
+    df2 <- flatten(df2)
+
     ## Row of frames => frame/(16*30)
     ## 16 frames per second / 60 (seconds a minute) * 0.5 (intervals)
     ## floor() for completed integer
@@ -158,9 +165,6 @@ supplyUsage <- function(adJSON, int, columnIndex) {
 ## CAPTURE BASES INFORMATION      ##
 ## ============================== ##
 basesInfo <- function(adJSON, int, columnIndex, gameDuration) {
-    # game duration -> to frames
-    durationFrames <- gameDuration*16
-    
     #basesInfo: num_bases, bases_destroyed, bases_cancelled
     basesInfo <- list()
     
@@ -171,7 +175,7 @@ basesInfo <- function(adJSON, int, columnIndex, gameDuration) {
         
         ## INTERVALS: bases created, destroyed, cancelled
         alive <- as.array(ifelse(!is.na(xi[, 1]), floor(xi[, 1]/(16*30)+1), NA))
-        destroyed <- ifelse(!is.na(xi[, 1]) & xi[, 2] < durationFrames, floor(xi[, 2]/(16*30)+1), NA)
+        destroyed <- ifelse(!is.na(xi[, 1]) & as.numeric(xi[, 2]) <= gameDuration, floor(xi[, 2]/(16*30)+1), NA)
         cancelled <- ifelse(is.na(xi[, 1]), floor(xi[, 2]/(16*30)+1), NA)
         
         ## ADD all bases data
@@ -213,22 +217,28 @@ computeUpgrades <- function(adJSON, int, columnIndex, races) {
     # check varaibles are avaiable
     if(!exists("upgrades")) upgrades <- readUpgradesList()
     len <- max(int)+1
-    # numUpgrades -> zerg / terran / protoss
-    numUpgrades <- c(26, 33, 25)
+    zergUpgrades <- upgrades[[1]][, 1]
+    terranUpgrades <- upgrades[[2]][, 1]
+    protossUpgrades <- upgrades[[3]][, 1]
+    zLength <- length(zergUpgrades)
+    tLength <- length(terranUpgrades)
+    pLength <- length(protossUpgrades)
+    tLength <- zLength + tLength + pLength
     
     # compute upgrades
     for(i in c(1:length(adJSON[[columnIndex]]))) {
         ## prepare environment
         xi <- adJSON[[columnIndex]][[i]]
-        pUpgrades <- as.data.frame(matrix(data = rep(NA, len*length(upgrades[, 1])), ncol = length(upgrades[, 1]), nrow = len))
-        names(pUpgrades) <- upgrades[, 1]
+        pUpgrades <- as.data.frame(matrix(data = rep(NA, len*tLength), ncol = tLength, nrow = len))
+        names(pUpgrades) <- c(zergUpgrades, terranUpgrades, protossUpgrades)
+        
         ## Create 0s depending on RACE
         if(races[i] == "Z") {
-            pUpgrades[, 1:numUpgrades[1]] <- 0
+            pUpgrades[, 1:zLength] <- 0
         } else if(races[i] == "T") {
-            pUpgrades[, (numUpgrades[1]+1):(numUpgrades[1]+numUpgrades[2])] <- 0
+            pUpgrades[, (zLength+1):(zLength+tLength)] <- 0
         } else {
-            pUpgrades[, (numUpgrades[2]+1):length(upgrades[, 1])] <- 0
+            pUpgrades[, (zLength+tLength+1):(zLength+tLength+pLength)] <- 0
         }
         
         ## add upgrades
@@ -242,4 +252,62 @@ computeUpgrades <- function(adJSON, int, columnIndex, races) {
     }
     
     upgradesInfo
+}
+
+computeArmy <- function(adJSON, int, columnIndex, races, gameDuration) {
+    ## Army Info
+    armyInfo <- list()
+    
+    ## Read race units & compute variables
+    if(!exists("unitsList")) unitsList <- readUnitsLists()
+    len <- max(int)+1
+    tUnits <- sum(length(unitsList[[1]][, 1])+length(unitsList[[2]][, 1])+length(unitsList[[3]][, 1]))
+    zergNames <- sort(c(unitsList[[1]][, 1], paste0(unitsList[[1]][, 1], "D")))
+    terranNames <- sort(c(unitsList[[2]][, 1], paste0(unitsList[[2]][, 1], "D")))
+    protossNames <- sort(c(unitsList[[3]][, 1], paste0(unitsList[[3]][, 1], "D")))
+    zLength <- length(zergNames)
+    tLength <- length(terranNames)
+    pLength <- length(protossNames)
+    
+    for(i in c(1:length(adJSON[[columnIndex]]))) {
+        ## prepare environment
+        xi <- adJSON[[columnIndex]][[i]]
+        pUnits <- as.data.frame(matrix(data = rep(NA, len*tUnits*2), ncol = (tUnits*2), nrow = len))
+        colnames(pUnits) <- c(zergNames, terranNames, protossNames)
+        
+        ## craetes 0s depending on race
+        if(races[i] == "Z") {
+            pUnits[, 1:zLength] <- 0
+        } else if(races[i] == "T") {
+            pUnits[, (zLength+1):(zLength+tLength)] <- 0
+        } else {
+            pUnits[, (zLength+tLength+1):(zLength+tLength+pLength)] <- 0
+        }
+        
+        ## Compute CRAETED & DEFEATED by GAME INTERVAL
+        for(j in c(1:dim(xi)[1])) {
+            ## add unit craeted to proper row
+            uColumn <- which(colnames(pUnits) == xi[j, 1])
+            uRow <- floor(as.numeric(xi[j, 2])/(16*30)+1)
+            pUnits[uRow, uColumn] <- pUnits[uRow, uColumn]+1
+            
+            ## add unit destroyed to column if required
+            if(as.numeric(xi[j, 3]) <= gameDuration) {
+                uRow <- floor(as.numeric(xi[j, 3])/(16*30)+1)
+                pUnits[uRow, (uColumn+1)] <- pUnits[uRow, (uColumn+1)]+1
+            }
+        }
+        
+        ## Compute ARMY TOTALS by INTERVAL (crated & destroyed)
+        for(j in c(2:len)) {
+            pUnits[j, ] <- pUnits[j, ] + pUnits[(j-1), ]
+        }
+        
+        ## Add to List
+        if(i == 1) armyInfo$p1 <- pUnits
+        else armyInfo$p2 <- pUnits
+    }
+    
+    ## Return armyInfo
+    armyInfo
 }

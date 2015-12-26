@@ -3,30 +3,30 @@
 ## ======================================= ##
 #ALL UPGRADES & UNITS => Zerg/terran/protoss
 createUpgradesAndArmy <- function() {
+    ## READ UPGRADES
     zergJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345542"
     terranJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345614"
     protossJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345638"
-    
     zergJSON <- fromJSON(zergJSON)
     terranJSON <- fromJSON(terranJSON)
     protossJSON <- fromJSON(protossJSON)
     
+    ### UPGRADES by RACE, SORT and CRAETE FILE
+    zergUpgrades <-  as.data.frame(sort(zergJSON[[8]][[1]][, 1]))
+    names(zergUpgrades) <- "zergUpgrades"
+    write.csv(zergUpgrades, file = "configFiles/zergUpgrades.csv", row.names = FALSE)
     
-    ## READ UPGRADES
-    zergUpgrades <-  sort(zergJSON[[8]][[1]][, 1])
-    terranUpgrades <- sort(terranJSON[[8]][[1]][, 1])
-    protossUpgrades <- sort(protossJSON[[8]][[1]][, 1])
-    
-    ## FUSION UPGRADES NAMES
-    upgrades <- as.data.frame(c(zergUpgrades, terranUpgrades, protossUpgrades))
-    names(upgrades) <- "upgrades"
-    upgrades$upgrades <- as.character(upgrades$upgrades)
-    
-    ## Save upgrades file
-    write.csv(upgrades, file = "configFiles/upgrades.csv", row.names = FALSE)
+    terranUpgrades <- as.data.frame(sort(terranJSON[[8]][[1]][, 1]))
+    names(terranUpgrades) <- "terranUpgrades"
+    write.csv(terranUpgrades, file = "configFiles/terranUpgrades.csv", row.names = FALSE)
     
     
-    ## READ UNITS
+    protossUpgrades <- as.data.frame(sort(protossJSON[[8]][[1]][, 1]))
+    names(protossUpgrades) <- "protossUpgrades"
+    write.csv(protossUpgrades, file = "configFiles/protossUpgrades.csv", row.names = FALSE)
+    
+    
+    ### UNITS by RACE, SORT and CRAETE FILE
     zergArmy <- zergJSON[[6]][[1]]
     zergUnits <- as.data.frame(sort(unique(zergArmy[, 1])))
     names(zergUnits) <- "zergUnits"
@@ -47,9 +47,11 @@ createUpgradesAndArmy <- function() {
 ## FUCTIONS TO READ UPGRADE & ARMY LISTs   ##
 ## ======================================= ##
 readUpgradesList <- function() {
-    upgrades <- read.csv("configFiles/upgrades.csv", stringsAsFactors = FALSE)
+    zergUpgrades <- read.csv("configFiles/zergUpgrades.csv", stringsAsFactors = FALSE)
+    terranUpgrades <- read.csv("configFiles/terranUpgrades.csv", stringsAsFactors = FALSE)
+    protossUpgrades <- read.csv("configFiles/protossUpgrades.csv", stringsAsFactors = FALSE)    
     
-    upgradesx
+    list(zergUpgrades, terranUpgrades, protossUpgrades)
 }
 
 readUnitsLists <- function() {
@@ -59,6 +61,3 @@ readUnitsLists <- function() {
     
     list(zergUnits, terranUnits, protossUnits)
 }
-
-
-
