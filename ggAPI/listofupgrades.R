@@ -36,5 +36,7 @@ createUpgradesList <- function() {
 ## =============================== ##
 readUpgradesList <- function() {
     upgrades <- read.csv("configFiles/upgrades.csv", stringsAsFactors = FALSE)
+    
+    upgrades
 }
 

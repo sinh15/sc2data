@@ -113,6 +113,11 @@ processGame <- function(id, dd) {
         df2$bases <- bInfo$p2
     }
     
+    ## COL(12): Upgrades
+    upgradesInfo <- computeUpgrades(adJSON, int, 8)
+    df1$upgrades <- upgradesInfo[[p1]]
+    df2$upgrades <- upgradesInfo[[p2]]
+    
     
     ## Row of frames => frame/(16*30)
     ## 16 frames per second / 60 (seconds a minute) * 0.5 (intervals)
@@ -204,4 +209,33 @@ basesInfo <- function(adJSON, int, columnIndex, gameDuration) {
     basesInfo
 }
 
-
+## ============================== ##
+## COMPUTE UPGRADES               ##
+## ============================== ##
+computeUpgrades <- function(adJSON, int, columnIndex) {
+    #upgradesInfo: P1 & P2 dataframes
+    upgradesInfo <- list()
+    
+    # check varaibles are avaiable
+    if(!exists("upgrades")) upgrades <- readUpgradesList()
+    len <- max(int)+1
+    
+    # compute upgrades
+    for(i in c(1:length(adJSON[[columnIndex]]))) {
+        ## prepare environment
+        xi <- adJSON[[columnIndex]][[i]]
+        pUpgrades <- as.data.frame(matrix(data = rep(0, len*length(upgrades[, 1])), ncol = length(upgrades[, 1]), nrow = len))
+        names(pUpgrades) <- upgrades[, 1]
+        
+        ## add upgrades
+        for(j in c(1:dim(xi)[1])) {
+            pUpgrades[floor(as.numeric(xi[j, 2])/(16*30)+1), xi[j, 1]] <- 1
+        }
+        
+        ## add uplayer upgrades to list
+        if(i == 1) upgradesInfo$p1 <- pUpgrades
+        else upgradesInfo$p2 <- pUpgrades
+    }
+    
+    upgradesInfo
+}

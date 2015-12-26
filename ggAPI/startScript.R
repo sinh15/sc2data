@@ -38,6 +38,13 @@ dd <- castDateSimpleDF(dd)
 ## ============================== ##
 dd <- readSimpleDataFrameSS()
 
+## ============================== ##
+## 6) Read config files           ##
+## ============================== ##
+upgrades <- readUpgradesList()
+
+
+
 ## functions to create local file and uplaod it to gmail
 write.csv(dd, file = "gameDetails/temps.csv", row.names = FALSE)
 gs_upload("gameDetails/temps.csv", sheet_title = x)
