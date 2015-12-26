@@ -13,17 +13,6 @@ processGame <- function(id, dd) {
     ## 2) Read Advanced Match Details
     adJSON <- paste0("https://gg2-matchblobs-prod.s3.amazonaws.com/", id)
     adJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6336526"
-    
-    #ALL UPGRADES & UNITS => Zerg/terran/protoss
-    zergJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345542"
-    terranJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345614"
-    protossJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6345638"
-    
-    zergJSON <- fromJSON(zergJSON)
-    terranJSON <- fromJSON(terranJSON)
-    protossJSON <- fromJSON(protossJSON)
-    
-    ## read advanced details
     adJSON <- fromJSON(adJSON)
     
     
@@ -96,27 +85,32 @@ processGame <- function(id, dd) {
     ## check if orther of data is crompromized
     supplyData <- supplyUsage(adJSON, int, 19)
     if(names(adJSON[[19]])[1] == pID_1) {
-        df1$supply <- supplyData$v1
-        df2$supply <- supplyData$v2    
+        df1$supply <- as.matrix(supplyData$v1)
+        df2$supply <- as.matrix(supplyData$v2)    
     } else {
-        df1$supply <- supplyData$v2
-        df2$supply <- supplyData$v1  
+        df1$supply <- as.matrix(supplyData$v2)
+        df2$supply <- as.matrix(supplyData$v1)
     }
     
     ## COL(11): Player Bases
     bInfo <- basesInfo(adJSON, int, 16, dd[dd$gameID == 6336526, "gameDuration"])
     if(adJSON[[16]][[1]][[1]] == pID_1) {
-        df1$bases <- bInfo$p1
-        df2$bases <- bInfo$p2
+        df1$bases <- as.matrix(bInfo$p1)
+        df2$bases <- as.matrix(bInfo$p2)
     } else {
-        df1$bases <- bInfo$p1
-        df2$bases <- bInfo$p2
+        df1$bases <- as.matrix(bInfo$p1)
+        df2$bases <- as.matrix(bInfo$p2)
     }
     
     ## COL(12): Upgrades
-    upgradesInfo <- computeUpgrades(adJSON, int, 8)
-    df1$upgrades <- upgradesInfo[[p1]]
-    df2$upgrades <- upgradesInfo[[p2]]
+    if(p1 == 1) {
+        races <- c(as.character(dd[dd$gameID == 6336526, "p1_race"]), as.character(dd[dd$gameID == 6336526, "p2_race"]))
+    } else races <- c(as.character(dd[dd$gameID == 6336526, "p2_race"]), as.character(dd[dd$gameID == 6336526, "p1_race"]))
+    upgradesInfo <- computeUpgrades(adJSON, int, 8, races)
+    df1$upgrades <- as.matrix(upgradesInfo[[p1]])
+    df2$upgrades <- as.matrix(upgradesInfo[[p2]])
+    
+    ## COL(13): Army info
     
     
     ## Row of frames => frame/(16*30)
@@ -212,20 +206,30 @@ basesInfo <- function(adJSON, int, columnIndex, gameDuration) {
 ## ============================== ##
 ## COMPUTE UPGRADES               ##
 ## ============================== ##
-computeUpgrades <- function(adJSON, int, columnIndex) {
+computeUpgrades <- function(adJSON, int, columnIndex, races) {
     #upgradesInfo: P1 & P2 dataframes
     upgradesInfo <- list()
     
     # check varaibles are avaiable
     if(!exists("upgrades")) upgrades <- readUpgradesList()
     len <- max(int)+1
+    # numUpgrades -> zerg / terran / protoss
+    numUpgrades <- c(26, 33, 25)
     
     # compute upgrades
     for(i in c(1:length(adJSON[[columnIndex]]))) {
         ## prepare environment
         xi <- adJSON[[columnIndex]][[i]]
-        pUpgrades <- as.data.frame(matrix(data = rep(0, len*length(upgrades[, 1])), ncol = length(upgrades[, 1]), nrow = len))
+        pUpgrades <- as.data.frame(matrix(data = rep(NA, len*length(upgrades[, 1])), ncol = length(upgrades[, 1]), nrow = len))
         names(pUpgrades) <- upgrades[, 1]
+        ## Create 0s depending on RACE
+        if(races[i] == "Z") {
+            pUpgrades[, 1:numUpgrades[1]] <- 0
+        } else if(races[i] == "T") {
+            pUpgrades[, (numUpgrades[1]+1):(numUpgrades[1]+numUpgrades[2])] <- 0
+        } else {
+            pUpgrades[, (numUpgrades[2]+1):length(upgrades[, 1])] <- 0
+        }
         
         ## add upgrades
         for(j in c(1:dim(xi)[1])) {

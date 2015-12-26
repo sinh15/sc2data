@@ -1,5 +1,7 @@
 ## Load libraries
 library(jsonlite)
+library(googlesheets)
+library(dplyr)
 
 ## Load Game: Simple Details
 gameJSON <- "http://api.ggtracker.com/api/v1/matches/6306072.json"

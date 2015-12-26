@@ -18,7 +18,7 @@ gs_auth(new_user = TRUE)
 ### First, set the working directory as the one this file is.
 source('buildingFunctions.R')
 source('spreadsheetsConnection.R')
-source('listofupgrades.R')
+source('generalUpgradesAndArmy.R')
 
 ## ============================== ##
 ## 4) Creating the simple DF      ##
