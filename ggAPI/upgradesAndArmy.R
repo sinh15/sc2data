@@ -1,3 +1,7 @@
+## UNTIS ANNOTATION
+### Zerg Missing: Lurkers
+### PRotoss Missing: Motership from mothership core (to double check)
+
 ## ======================================= ##
 ## FUCTIONS TO CREATE UPGRADE & ARMY LISTs ##
 ## ======================================= ##
@@ -29,16 +33,19 @@ createUpgradesAndArmy <- function() {
     ### UNITS by RACE, SORT and CRAETE FILE
     zergArmy <- zergJSON[[6]][[1]]
     zergUnits <- as.data.frame(sort(unique(zergArmy[, 1])))
+    zergUnits <- as.data.frame(zergUnits[!(zergUnits[, 1] %in% c("drone", "broodling")), ])
     names(zergUnits) <- "zergUnits"
     write.csv(zergUnits, file = "configFiles/zergUnits.csv", row.names = FALSE)
     
     terranArmy <- terranJSON[[6]][[1]]
     terranUnits <- as.data.frame(sort(unique(terranArmy[, 1])))
+    terranUnits <- as.data.frame(terranUnits[!(terranUnits[, 1] %in% c("scv")), ])
     names(terranUnits) <- "terranUnits"
     write.csv(terranUnits, file = "configFiles/terranUnits.csv", row.names = FALSE)
     
     protossArmy <- protossJSON[[6]][[1]]
     protossUnits <- as.data.frame(sort(unique(protossArmy[, 1])))
+    protossUnits <- as.data.frame(protossUnits[!(protossUnits[, 1] %in% c("probe")), ])
     names(protossUnits) <- "protossUnits"
     write.csv(protossUnits, file = "configFiles/protossUnits.csv", row.names = FALSE)
 }  

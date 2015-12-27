@@ -16,25 +16,27 @@ gs_auth(new_user = TRUE)
 ## 3) Initialize Environment      ##
 ## ============================== ##
 ### First, set the working directory as the one this file is.
-source('buildingFunctions.R')
 source('spreadsheetsConnection.R')
-source('generalUpgradesAndArmy.R')
+source('builderSimpleDF.R')
+source('builderAdvancedDF.R')
+source('upgradesAndArmy.R')
+source('processGames.R')
 
 ## ============================== ##
-## 4) Creating the simple DF      ##
+## 4) Creating DFs                ##
 ## ============================== ##
 dd <- createSimpleDF()
+df <- createAdvancedDF()
 
 ## ============================== ##
 ## 5.1) Read game                 ##
 ## ============================== ##
 gameJSON <- "http://api.ggtracker.com/api/v1/matches/6306072.json"
 gameJSON <- fromJSON(gameJSON)
-dd <- addGameSimpleDF(dd, gameJSON)
-dd <- castDateSimpleDF(dd)
+dd <- extractSimpleGameDetails(gameJSON)
 
 ## ============================== ##
-## 5.2) Read online DD            ##
+## 5.2) Read online Simple DD     ##
 ## ============================== ##
 dd <- readSimpleDataFrameSS()
 
@@ -42,9 +44,9 @@ dd <- readSimpleDataFrameSS()
 ## 6) Read config files           ##
 ## ============================== ##
 upgrades <- readUpgradesList()
-
+unitsList <- readUnitsLists()
 
 
 ## functions to create local file and uplaod it to gmail
-write.csv(dd, file = "gameDetails/temps.csv", row.names = FALSE)
-gs_upload("gameDetails/temps.csv", sheet_title = x)
+write.csv(dd, file = "tempFiles/temps.csv", row.names = FALSE)
+gs_upload("tempFiles/temps.csv", sheet_title = x)

@@ -1,22 +1,16 @@
 ## ============================== ##
-## PROCESS GAME DATA FROM GAME ID ##
+## CREATING SINGLE INFO DATAFRAME ##
 ## ============================== ##
-processGame <- function(id, dd) {
-    ## 1) Read simple match details
-    gameJSON <- paste0("http://api.ggtracker.com/api/v1/matches/", id, ".json")
-    gameJSON <- "http://api.ggtracker.com/api/v1/matches/6336526.json"
-    gameJSON <- fromJSON(gameJSON)
-    
-    ## at the moment we will rbind on the previous function, on the future we will not
-    dd <- addGameSimpleDF(dd, gameJSON)
-    
-    ## 2) Read Advanced Match Details
-    adJSON <- paste0("https://gg2-matchblobs-prod.s3.amazonaws.com/", id)
-    adJSON <-  "https://gg2-matchblobs-prod.s3.amazonaws.com/6336526"
-    adJSON <- fromJSON(adJSON)
-    
-    
-    
+createAdvancedDF <- function() {
+    df <- data.frame()
+    ## Return data frame
+    df
+}
+
+## ============================== ##
+## COPUTE ADVANCED DF OF GAME     ##
+## ============================== ##
+extractAdvancedGameDetails <- function(adJSON, id, dd) {
     ## PREPARE INTERVALS
     int <- array(1:length(adJSON[["Lost"]][[1]]))
     int <- apply(int, 1, function(i) ((i-1)*10)%/%30)
@@ -26,17 +20,17 @@ processGame <- function(id, dd) {
     df2 <- data.frame(matrix(nrow = max(int)+1))
     
     ## COL(1): Id of the player
-    pID_1 <- dd[dd$gameID == 6336526, "p1_ID"]
-    pID_2 <- dd[dd$gameID == 6336526, "p2_ID"]
-    df1[, 1] <- dd[dd$gameID == 6336526, "p1_ID"]
-    df2[, 1] <- dd[dd$gameID == 6336526, "p2_ID"]
+    pID_1 <- dd[dd$gameID == id, "p1_ID"]
+    pID_2 <- dd[dd$gameID == id, "p2_ID"]
+    df1[, 1] <- dd[dd$gameID == id, "p1_ID"]
+    df2[, 1] <- dd[dd$gameID == id, "p2_ID"]
     names(df1)[1] <- "game"
     names(df2)[1] <- "game"
     
     
     ## COL(2): Name of the player
-    df1$name <- dd[dd$gameID == 6336526, "p1_name"]
-    df2$name <- dd[dd$gameID == 6336526, "p2_name"]
+    df1$name <- dd[dd$gameID == id, "p1_name"]
+    df2$name <- dd[dd$gameID == id, "p2_name"]
     
     ## COL(3): Minute of game
     df1[, 3] <- mutate(as.data.frame(int), minutes = int*30/60) %>% group_by(minutes) %>% summarize(max(minutes)) %>% select(minutes)
@@ -93,7 +87,7 @@ processGame <- function(id, dd) {
     }
     
     ## COL(11): Player Bases
-    gameDuration <- dd[dd$gameID == 6336526, "gameDuration"]*16
+    gameDuration <- dd[dd$gameID == id, "gameDuration"]*16
     bInfo <- basesInfo(adJSON, int, 16, gameDuration)
     if(adJSON[[16]][[1]][[1]] == pID_1) {
         df1$bases <- bInfo$p1
@@ -105,8 +99,8 @@ processGame <- function(id, dd) {
     
     ## COL(12): Upgrades
     if(p1 == 1) {
-        races <- c(as.character(dd[dd$gameID == 6336526, "p1_race"]), as.character(dd[dd$gameID == 6336526, "p2_race"]))
-    } else races <- c(as.character(dd[dd$gameID == 6336526, "p2_race"]), as.character(dd[dd$gameID == 6336526, "p1_race"]))
+        races <- c(as.character(dd[dd$gameID == id, "p1_race"]), as.character(dd[dd$gameID == id, "p2_race"]))
+    } else races <- c(as.character(dd[dd$gameID == id, "p2_race"]), as.character(dd[dd$gameID == id, "p1_race"]))
     upgradesInfo <- computeUpgrades(adJSON, int, 8, races)
     df1$upgrades <- upgradesInfo[[p1]]
     df2$upgrades <- upgradesInfo[[p2]]
@@ -119,11 +113,24 @@ processGame <- function(id, dd) {
     ## FLATTEN DFs
     df1 <- flatten(df1)
     df2 <- flatten(df2)
-
-    ## Row of frames => frame/(16*30)
-    ## 16 frames per second / 60 (seconds a minute) * 0.5 (intervals)
-    ## floor() for completed integer
-    ## floor(4783/(16*30)+1)
+    
+    ## RBIND
+    allDF <- rbind(df1, df2)
+    
+    ## UPLOAD: Craete temps and upload ADV. info x PLAYER
+    temp1 <- paste0("tempFiles/", id, "_", pID_1, ".csv")
+    temp2 <- paste0("tempFiles/", id, "_", pID_2, ".csv")
+    df1$minutes <- gsub("\\.", ",", df1$minutes)
+    df2$minutes <- gsub("\\.", ",", df2$minutes)
+    df1[, 10] <- gsub("\\.", ",", df1[, 10])
+    df2[, 10] <- gsub("\\.", ",", df2[, 10])
+    write.csv(df1, file = temp1, row.names = FALSE)
+    write.csv(df2, file = temp2, row.names = FALSE)
+    gs_upload(temp1)
+    gs_upload(temp2)
+    
+    ## RETURN
+    allDF
 }
 
 ## ============================== ##
@@ -223,13 +230,13 @@ computeUpgrades <- function(adJSON, int, columnIndex, races) {
     zLength <- length(zergUpgrades)
     tLength <- length(terranUpgrades)
     pLength <- length(protossUpgrades)
-    tLength <- zLength + tLength + pLength
+    totalLength <- zLength + tLength + pLength
     
     # compute upgrades
     for(i in c(1:length(adJSON[[columnIndex]]))) {
         ## prepare environment
         xi <- adJSON[[columnIndex]][[i]]
-        pUpgrades <- as.data.frame(matrix(data = rep(NA, len*tLength), ncol = tLength, nrow = len))
+        pUpgrades <- as.data.frame(matrix(data = rep(NA, len*totalLength), ncol = totalLength, nrow = len))
         names(pUpgrades) <- c(zergUpgrades, terranUpgrades, protossUpgrades)
         
         ## Create 0s depending on RACE
@@ -265,6 +272,7 @@ computeArmy <- function(adJSON, int, columnIndex, races, gameDuration) {
     zergNames <- sort(c(unitsList[[1]][, 1], paste0(unitsList[[1]][, 1], "D")))
     terranNames <- sort(c(unitsList[[2]][, 1], paste0(unitsList[[2]][, 1], "D")))
     protossNames <- sort(c(unitsList[[3]][, 1], paste0(unitsList[[3]][, 1], "D")))
+    allNames <- c(zergNames, terranNames, protossNames)
     zLength <- length(zergNames)
     tLength <- length(terranNames)
     pLength <- length(protossNames)
@@ -273,7 +281,7 @@ computeArmy <- function(adJSON, int, columnIndex, races, gameDuration) {
         ## prepare environment
         xi <- adJSON[[columnIndex]][[i]]
         pUnits <- as.data.frame(matrix(data = rep(NA, len*tUnits*2), ncol = (tUnits*2), nrow = len))
-        colnames(pUnits) <- c(zergNames, terranNames, protossNames)
+        colnames(pUnits) <- allNames
         
         ## craetes 0s depending on race
         if(races[i] == "Z") {
@@ -286,15 +294,18 @@ computeArmy <- function(adJSON, int, columnIndex, races, gameDuration) {
         
         ## Compute CRAETED & DEFEATED by GAME INTERVAL
         for(j in c(1:dim(xi)[1])) {
-            ## add unit craeted to proper row
-            uColumn <- which(colnames(pUnits) == xi[j, 1])
-            uRow <- floor(as.numeric(xi[j, 2])/(16*30)+1)
-            pUnits[uRow, uColumn] <- pUnits[uRow, uColumn]+1
-            
-            ## add unit destroyed to column if required
-            if(as.numeric(xi[j, 3]) <= gameDuration) {
-                uRow <- floor(as.numeric(xi[j, 3])/(16*30)+1)
-                pUnits[uRow, (uColumn+1)] <- pUnits[uRow, (uColumn+1)]+1
+            ## Check if valid UNIT
+            if(is.element(xi[j, 1], allNames)) {
+                ## add unit craeted to proper row
+                uColumn <- which(colnames(pUnits) == xi[j, 1])
+                uRow <- floor(as.numeric(xi[j, 2])/(16*30)+1)
+                pUnits[uRow, uColumn] <- pUnits[uRow, uColumn]+1
+                
+                ## add unit destroyed to column if required
+                if(as.numeric(xi[j, 3]) <= gameDuration) {
+                    uRow <- floor(as.numeric(xi[j, 3])/(16*30)+1)
+                    pUnits[uRow, (uColumn+1)] <- pUnits[uRow, (uColumn+1)]+1
+                }
             }
         }
         
