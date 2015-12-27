@@ -10,7 +10,7 @@ createAdvancedDF <- function() {
 ## ============================== ##
 ## COPUTE ADVANCED DF OF GAME     ##
 ## ============================== ##
-extractAdvancedGameDetails <- function(adJSON, id, dd) {
+extractAdvancedGameDetails <- function(adJSON, id, dd, upload) {
     ## PREPARE INTERVALS
     int <- array(1:length(adJSON[["Lost"]][[1]]))
     int <- apply(int, 1, function(i) ((i-1)*10)%/%30)
@@ -75,7 +75,15 @@ extractAdvancedGameDetails <- function(adJSON, id, dd) {
     df1$vespene_cr <- vespeneCollectionRate[[p1]]
     df2$vespene_cr <- vespeneCollectionRate[[p2]]
     
-    ## COL(10): Current Supply & Max Supply
+    ## COL(10): Spending Quotient
+    p1Income <- df1$minerals_cr + df1$vespene_cr
+    p2Income <- df2$minerals_cr + df2$vespene_cr
+    p1Unspent <- df1$minerals + df1$vespene
+    p2Unspent <- df2$minerals + df2$vespene
+    df1$spending_quotient <- 35*(0.00137*p1Income - log(p1Unspent))+240
+    df2$spending_quotient <- 35*(0.00137*p2Income - log(p2Unspent))+240
+    
+    ## COL(11): Current Supply & Max Supply
     ## check if orther of data is crompromized
     supplyData <- supplyUsage(adJSON, int, 19)
     if(names(adJSON[[19]])[1] == pID_1) {
@@ -86,7 +94,7 @@ extractAdvancedGameDetails <- function(adJSON, id, dd) {
         df2$supply <- supplyData$v1
     }
     
-    ## COL(11): Player Bases
+    ## COL(12): Player Bases
     gameDuration <- dd[dd$gameID == id, "gameDuration"]*16
     bInfo <- basesInfo(adJSON, int, 16, gameDuration)
     if(adJSON[[16]][[1]][[1]] == pID_1) {
@@ -97,7 +105,7 @@ extractAdvancedGameDetails <- function(adJSON, id, dd) {
         df2$bases <- bInfo$p2
     }
     
-    ## COL(12): Upgrades
+    ## COL(13): Upgrades
     if(p1 == 1) {
         races <- c(as.character(dd[dd$gameID == id, "p1_race"]), as.character(dd[dd$gameID == id, "p2_race"]))
     } else races <- c(as.character(dd[dd$gameID == id, "p2_race"]), as.character(dd[dd$gameID == id, "p1_race"]))
@@ -105,7 +113,7 @@ extractAdvancedGameDetails <- function(adJSON, id, dd) {
     df1$upgrades <- upgradesInfo[[p1]]
     df2$upgrades <- upgradesInfo[[p2]]
     
-    ## COL(13): Army info
+    ## COL(14): Army info
     units <- computeArmy(adJSON, int, 6, races, gameDuration)
     df1$units <- units[[p1]]
     df2$units <- units[[p2]]
@@ -118,16 +126,18 @@ extractAdvancedGameDetails <- function(adJSON, id, dd) {
     allDF <- rbind(df1, df2)
     
     ## UPLOAD: Craete temps and upload ADV. info x PLAYER
-    temp1 <- paste0("tempFiles/", id, "_", pID_1, ".csv")
-    temp2 <- paste0("tempFiles/", id, "_", pID_2, ".csv")
-    df1$minutes <- gsub("\\.", ",", df1$minutes)
-    df2$minutes <- gsub("\\.", ",", df2$minutes)
-    df1[, 10] <- gsub("\\.", ",", df1[, 10])
-    df2[, 10] <- gsub("\\.", ",", df2[, 10])
-    write.csv(df1, file = temp1, row.names = FALSE)
-    write.csv(df2, file = temp2, row.names = FALSE)
-    gs_upload(temp1)
-    gs_upload(temp2)
+    if(upload == TRUE) {
+        temp1 <- paste0("tempFiles/", id, "_", pID_1, ".csv")
+        temp2 <- paste0("tempFiles/", id, "_", pID_2, ".csv")
+        df1$minutes <- gsub("\\.", ",", df1$minutes)
+        df2$minutes <- gsub("\\.", ",", df2$minutes)
+        df1[, 10] <- gsub("\\.", ",", df1[, 10])
+        df2[, 10] <- gsub("\\.", ",", df2[, 10])
+        write.csv(df1, file = temp1, row.names = FALSE)
+        write.csv(df2, file = temp2, row.names = FALSE)
+        gs_upload(temp1)
+        gs_upload(temp2)
+    }
     
     ## RETURN
     allDF

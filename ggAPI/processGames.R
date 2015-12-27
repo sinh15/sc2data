@@ -1,7 +1,7 @@
 ## ============================== ##
 ## PROCESS GAME DATA FROM GAME ID ##
 ## ============================== ##
-processGame <- function(id) {
+processGame <- function(id, upload) {
     ## CHECK containers exist
     if(!exists("dd")) stop("Please Create Simple Data Frame")
     else if(!exists("df")) stop("Please Create Advanced Data Frame")
@@ -15,7 +15,7 @@ processGame <- function(id) {
     ## ADD: Game to advanced df
     adJSON <- paste0("https://gg2-matchblobs-prod.s3.amazonaws.com/", id)
     adJSON <- fromJSON(adJSON)
-    gameAdvanced <- extractAdvancedGameDetails(adJSON, id, gameSimple)
+    gameAdvanced <- extractAdvancedGameDetails(adJSON, id, gameSimple, upload)
     df <<- rbind(df, gameAdvanced)
 }
 
@@ -30,4 +30,4 @@ processGame <- function(id) {
 # adJSON <- fromJSON(adJSON)
 
 
-##processGame(6336526)
+##processGame(6336526, FALSE)
