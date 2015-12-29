@@ -19,24 +19,27 @@ extractAdvancedGameDetails <- function(adJSON, id, dd, upload) {
     df1 <- data.frame(matrix(nrow = max(int)+1))
     df2 <- data.frame(matrix(nrow = max(int)+1))
     
-    ## COL(1): Id of the player
+    ## COL(1): Id of the game
+    df1[, 1] <- id
+    df2[, 1] <- id
+    names(df1)[1] <- "gameID"
+    names(df2)[1] <- "gameID"
+    
+    ## COL(2): Id of the player
     pID_1 <- dd[dd$gameID == id, "p1_ID"]
     pID_2 <- dd[dd$gameID == id, "p2_ID"]
-    df1[, 1] <- dd[dd$gameID == id, "p1_ID"]
-    df2[, 1] <- dd[dd$gameID == id, "p2_ID"]
-    names(df1)[1] <- "game"
-    names(df2)[1] <- "game"
+    df1$playerID <- dd[dd$gameID == id, "p1_ID"]
+    df2$playerID <- dd[dd$gameID == id, "p2_ID"]
     
-    
-    ## COL(2): Name of the player
+    ## COL(3): Name of the player
     df1$name <- dd[dd$gameID == id, "p1_name"]
     df2$name <- dd[dd$gameID == id, "p2_name"]
     
-    ## COL(3): Minute of game
-    df1[, 3] <- mutate(as.data.frame(int), minutes = int*30/60) %>% group_by(minutes) %>% summarize(max(minutes)) %>% select(minutes)
-    df2$minutes <- df1[, 3]
+    ## COL(4): Minute of game
+    df1[, 4] <- mutate(as.data.frame(int), minutes = int*30/60) %>% group_by(minutes) %>% summarize(max(minutes)) %>% select(minutes)
+    df2$minutes <- df1[, 4]
     
-    ## COL(4): Resources Lost x interval + position of players
+    ## COL(5): Resources Lost x interval + position of players
     resourcesLost <- extractMaxs10SecondsBlocks(adJSON, int, 5)
     if(names(resourcesLost)[1] == pID_1) {
         p1 <- 1
@@ -50,32 +53,32 @@ extractAdvancedGameDetails <- function(adJSON, id, dd, upload) {
     df1$lost <- resourcesLost[[p1]]
     df2$lost <- resourcesLost[[p2]]
     
-    ## COL(5): Active Workers
+    ## COL(6): Active Workers
     activeWorkers <- extractMaxs10SecondsBlocks(adJSON, int, 9)
     df1$workers <- activeWorkers[[p1]]
     df2$workers <- activeWorkers[[p2]]
     
-    ## COL(6): Current Minerals
+    ## COL(7): Current Minerals
     currentMinerals <- extractMaxs10SecondsBlocks(adJSON, int, 11)
     df1$minerals <- currentMinerals[[p1]]
     df2$minerals <- currentMinerals[[p2]]
     
-    ## COL(7): Current Minerals Collection Rate
+    ## COL(8): Current Minerals Collection Rate
     mineralsCollectionRate <- extractMaxs10SecondsBlocks(adJSON, int, 12)
     df1$minerals_cr <- mineralsCollectionRate[[p1]]
     df2$minerals_cr <- mineralsCollectionRate[[p2]]
     
-    ## COL(8): Current Vespene Gas
+    ## COL(9): Current Vespene Gas
     currentVespene <- extractMaxs10SecondsBlocks(adJSON, int, 15)
     df1$vespene <- currentVespene[[p1]]
     df2$vespene <- currentVespene[[p2]]
     
-    ## COL(9): Current Vespene Gas Collection Rate
+    ## COL(10): Current Vespene Gas Collection Rate
     vespeneCollectionRate <- extractMaxs10SecondsBlocks(adJSON, int, 17)
     df1$vespene_cr <- vespeneCollectionRate[[p1]]
     df2$vespene_cr <- vespeneCollectionRate[[p2]]
     
-    ## COL(10): Spending Quotient
+    ## COL(11): Spending Quotient
     p1Income <- df1$minerals_cr + df1$vespene_cr
     p2Income <- df2$minerals_cr + df2$vespene_cr
     p1Unspent <- df1$minerals + df1$vespene
@@ -83,7 +86,7 @@ extractAdvancedGameDetails <- function(adJSON, id, dd, upload) {
     df1$spending_quotient <- 35*(0.00137*p1Income - log(p1Unspent))+240
     df2$spending_quotient <- 35*(0.00137*p2Income - log(p2Unspent))+240
     
-    ## COL(11): Current Supply & Max Supply
+    ## COL(12): Current Supply & Max Supply
     ## check if orther of data is crompromized
     supplyData <- supplyUsage(adJSON, int, 19)
     if(names(adJSON[[19]])[1] == pID_1) {
@@ -94,7 +97,7 @@ extractAdvancedGameDetails <- function(adJSON, id, dd, upload) {
         df2$supply <- supplyData$v1
     }
     
-    ## COL(12): Player Bases
+    ## COL(13): Player Bases
     gameDuration <- dd[dd$gameID == id, "gameDuration"]*16
     bInfo <- basesInfo(adJSON, int, 16, gameDuration)
     if(adJSON[[16]][[1]][[1]] == pID_1) {
@@ -105,7 +108,7 @@ extractAdvancedGameDetails <- function(adJSON, id, dd, upload) {
         df2$bases <- bInfo$p2
     }
     
-    ## COL(13): Upgrades
+    ## COL(14): Upgrades
     if(p1 == 1) {
         races <- c(as.character(dd[dd$gameID == id, "p1_race"]), as.character(dd[dd$gameID == id, "p2_race"]))
     } else races <- c(as.character(dd[dd$gameID == id, "p2_race"]), as.character(dd[dd$gameID == id, "p1_race"]))
@@ -113,7 +116,7 @@ extractAdvancedGameDetails <- function(adJSON, id, dd, upload) {
     df1$upgrades <- upgradesInfo[[p1]]
     df2$upgrades <- upgradesInfo[[p2]]
     
-    ## COL(14): Army info
+    ## COL(15): Army info
     units <- computeArmy(adJSON, int, 6, races, gameDuration)
     df1$units <- units[[p1]]
     df2$units <- units[[p2]]

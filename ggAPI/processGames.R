@@ -31,3 +31,22 @@ processGame <- function(id, upload) {
 
 
 ##processGame(6336526, FALSE)
+# 
+# processGame(6350628, FALSE)
+# processGame(6350630, FALSE)
+# processGame(6350631, FALSE)
+# processGame(6350629, FALSE)
+# processGame(6350633, FALSE)
+# processGame(6350632, FALSE)
+# 
+# processGame(6353026, FALSE)
+# processGame(6353025, FALSE)
+# processGame(6353027, FALSE)
+# processGame(6353024, FALSE)
+# processGame(6353023, FALSE)
+# processGame(6353018, FALSE)
+# processGame(6353017, FALSE)
+# processGame(6353020, FALSE)
+# processGame(6353019, FALSE)
+# processGame(6353016, FALSE)
+
