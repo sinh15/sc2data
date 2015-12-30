@@ -1,9 +1,10 @@
 ## ============================== ##
 ## 1) Enable Libraries            ##
 ## ============================== ##
-library(googlesheets)
-library(jsonlite)
-library(dplyr)
+if(!require(googlesheets)) install.packages("googlesheets")
+if(!require(jsonlite)) install.packages("jsonlite")
+if(!require(dplyr)) install.packages("dplyr")
+if(!require(ggplot2)) install.packages("ggplot2")
 
 ## ============================== ##
 ## 2) Auth Spreadsheets           ##

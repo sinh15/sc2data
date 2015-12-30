@@ -19,6 +19,31 @@ processGame <- function(id, upload) {
     df <<- rbind(df, gameAdvanced)
 }
 
+readGamesGGTracker <- function(id, upload, max = 20) {
+    ##sinHID <- 1586656
+    
+    upToDate <- FALSE
+    pageNum <- 1
+    uploaded <- 0
+    while(!upToDate & uploaded < max) {
+        gameList <- paste0("http://api.ggtracker.com/api/v1/matches?category=Ladder&game_type=1v1&identity_id=", id, "&page=", pageNum, "&paginate=true")
+        gameList <- fromJSON(gameList)
+        
+        gameList <- gameList[["collection"]][, 1]
+        pageGames <- match(gameList, dd[, "gameID"])
+        
+        for(j in c(1:length(pageGames))) {
+            if(is.na(pageGames[j])) {
+                processGame(gameList[j], upload)
+                uploaded <- uploaded + 1
+            }
+            else upToDate <- TRUE
+        }
+        
+        pageNum <- pageNum + 1
+    }
+}
+
 
 
 # gameJSON <- "http://api.ggtracker.com/api/v1/matches/6336526.json"
@@ -49,4 +74,15 @@ processGame <- function(id, upload) {
 # processGame(6353020, FALSE)
 # processGame(6353019, FALSE)
 # processGame(6353016, FALSE)
+#
+# processGame(6355861, FALSE)
+# processGame(6355864, FALSE)
+# processGame(6355863, FALSE)
+# processGame(6355862, FALSE)
+# processGame(6355865, FALSE)
+# processGame(6355869, FALSE)
+# processGame(6355867, FALSE)
+# processGame(6355866, FALSE)
+# processGame(6355868, FALSE)
+# processGame(6355870, FALSE)
 

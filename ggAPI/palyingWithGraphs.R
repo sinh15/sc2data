@@ -106,7 +106,49 @@ xx <- filter(df, gameID %in% x[, 1]) %>%
      mutate(matchup = x[match(gameID, x[, 1]), 2]) %>% group_by(interval) %>%
      mutate(lengthInterval = length(interval)) %>% group_by(matchup, add = TRUE) %>%
      mutate(lengthMatchup = length(matchup)) %>% summarise(matchup_density = sum(lengthMatchup)/sum(lengthInterval))
-with(subset(xx, matchup == "TvZ"), plot(matchup_density ~ interval, col = "blue", type = "l"))
-with(subset(xx, matchup == "PvZ"), plot(matchup_density ~ interval, col = "darkgoldenrod1", type = "l"))
-with(subset(xx, matchup == "ZvZ"), plot(matchup_density ~ interval, col = "firebrick", type = "l"))
+with(subset(xx, matchup == "TvZ"), plot(interval, matchup_density, col = "blue", type = "l", ylim=c(0, 0.7)))
+with(subset(xx, matchup == "PvZ"), points(interval, matchup_density, col = "darkgoldenrod1", type = "l", ylim=c(0, 0.7)))
+with(subset(xx, matchup == "ZvZ"), points(interval, matchup_density, col = "firebrick", type = "l", ylim=c(0, 0.7)))
+
+
+
+
+## PLAYING WITH GGPLOT2
+## spending quotient and bases.num_bases
+x <- mutate(dd, pWin = ifelse(p1_name == "sinH", p1_win, p2_win)) %>%
+     select(gameID, pWin)
+win <- filter(x, pWin == 1)
+
+y <- filter(df, name == "sinH") %>% mutate(result = ifelse(gameID %in% win[, 1], 1, 0))
+qplot(bases.num_bases, spending_quotient, data = y, geom = c("point", "smooth"))
+
+## display relation workers and mienrals collection rate
+x <- filter(df, name == "sinH")
+qplot(workers, minerals_cr, data = x, geom = c("point", "smooth"))
+
+## workers by mintue and relation win lose
+x <- mutate(dd, pWin = ifelse(p1_name == "sinH", p1_win, p2_win)) %>%
+     select(gameID, pWin)
+y <- filter(df, name == "sinH") %>% mutate(result = ifelse(gameID %in% win[, 1], 1, 0))
+qplot(minutes, workers, data = y, col = result)
+
+## sspending quotient based on matchup
+x <- select(dd, gameID, matchup)
+xTerran <- filter(x, matchup == "TvZ") %>% select(gameID)
+xProtoss <- filter(x, matchup == "PvZ") %>% select(gameID)
+xZerg <- filter(x, matchup == "ZvZ") %>% select(gameID)
+y <- filter(df, name == "sinH") %>% 
+     mutate(matchup = ifelse(gameID %in% xTerran[, 1], "TvZ", ifelse(gameID %in% xProtoss[, 1], "PvZ", "ZvZ")))
+
+qplot(spending_quotient, data = y, fill = matchup, binwidth = 2)
+
+## trying qplot only one variable: FACTOR -> barplot
+qplot(matchup, data = dd)
+
+## trying qplot only one variable: NUMERIC -> histogram
+qplot(supply.currentSupply, data = df)
+
+## BOXPLOT: numerical vs categorical
+x <- mutate(dd, pSpending = ifelse(p1_name=="sinH", p1_spending_quotient, p2_spending_quotient))
+qplot(matchup, pSpending, data = x, geom = "boxplot")
 
