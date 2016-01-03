@@ -7,18 +7,25 @@ processGame <- function(id, upload) {
     else if(!exists("df")) stop("Please Create Advanced Data Frame")
     
     ## ADD: Game to simple dd
-    gameJSON <- paste0("http://api.ggtracker.com/api/v1/matches/", id, ".json")
-    gameJSON <- fromJSON(gameJSON)
-    gameSimple <- extractSimpleGameDetails(gameJSON)
-    dd <<- rbind(dd, gameSimple)
-    
-    ## ADD: Game to advanced df
-    adJSON <- paste0("https://gg2-matchblobs-prod.s3.amazonaws.com/", id)
-    adJSON <- fromJSON(adJSON)
-    gameAdvanced <- extractAdvancedGameDetails(adJSON, id, gameSimple, upload)
-    df <<- rbind(df, gameAdvanced)
+    if(!id %in% dd$gameID) {
+        gameJSON <- paste0("http://api.ggtracker.com/api/v1/matches/", id, ".json")
+        gameJSON <- fromJSON(gameJSON)
+        gameSimple <- extractSimpleGameDetails(gameJSON)
+        dd <<- rbind(dd, gameSimple)
+        
+        ## ADD: Game to advanced df
+        adJSON <- paste0("https://gg2-matchblobs-prod.s3.amazonaws.com/", id)
+        adJSON <- fromJSON(adJSON)
+        gameAdvanced <- extractAdvancedGameDetails(adJSON, id, gameSimple, upload)
+        df <<- rbind(df, gameAdvanced)
+    } else {
+        stop("Game Already on the Simple DD (and probably on the Advanced too")
+    }
 }
 
+## ============================== ##
+## READ NEW GAMES FROM GG TRACKER ##
+## ============================== ##
 readGamesGGTracker <- function(id, upload, max = 50) {
     ##sinHID <- 1586656
     
@@ -43,8 +50,69 @@ readGamesGGTracker <- function(id, upload, max = 50) {
         pageNum <- pageNum + 1
     }
 }
+## ============================== ##
+## PROCESS DD FROM ID             ##
+## ============================== ##
+processSimpleFromID <- function(id) {
+    ## CHECK containers exist
+    if(!exists("dd")) stop("Please Create Simple Data Frame")
+    
+    ## ADD: Game to simple dd
+    if(!id %in% dd$gameID) {
+        gameJSON <- paste0("http://api.ggtracker.com/api/v1/matches/", id, ".json")
+        gameJSON <- fromJSON(gameJSON)
+        gameSimple <- extractSimpleGameDetails(gameJSON)
+        dd <<- rbind(dd, gameSimple)
+    } else {
+        stop("The game is already on the simpleDD")
+    }
+}
 
+## ============================== ##
+## PROCESS DF FROM ID             ##
+## ============================== ##
+processAdvancedFromID <- function(id, upload) {
+    ## CHECK containers exist
+    if(!exists("dd")) stop("Please Create Simple Data Frame")
+    else if(!exists("df")) stop("Please Create Advanced Data Frame")
+    
+    ## CHECK that the game exists on the simple DF
+    if(id %in% dd$gameID) {
+        ## REMOVE: rests of the game from advancedDF
+        df <<- filter(df, gameID != id)
+        
+        ## ADD: Game to advanced df
+        adJSON <- paste0("https://gg2-matchblobs-prod.s3.amazonaws.com/", id)
+        adJSON <- fromJSON(adJSON)
+        gameAdvanced <- extractAdvancedGameDetails(adJSON, id, dd[dd$gameID == id, ], upload)
+        df <<- rbind(df, gameAdvanced)
+    } else {
+        stop("The game is not to be found on the simpleDD. Please use the function processGame(id, upload) instead")
+    }
+}
 
+## ============================== ##
+## PROCESS DF FROM DD             ##
+## ============================== ##
+processAdvancedFromDD <- function(upload) {
+    ## CHECK containers exist
+    if(!exists("dd")) stop("Please Create Simple Data Frame")
+    else if(!exists("df")) stop("Please Create Advanced Data Frame")
+    
+    ## GET games on simple DD
+    x <- as.array(dd$gameID)
+    
+    for(i in c(1:length(x))) {
+        ## REMOVE: rests of the game from advancedDF
+        df <<- filter(df, gameID != x[i])
+        
+        ## ADD: Game to advanced df
+        adJSON <- paste0("https://gg2-matchblobs-prod.s3.amazonaws.com/", x[i])
+        adJSON <- fromJSON(adJSON)
+        gameAdvanced <- extractAdvancedGameDetails(adJSON, x[i], dd[dd$gameID == x[i], ], upload)
+        df <<- rbind(df, gameAdvanced) 
+    }
+}
 
 # gameJSON <- "http://api.ggtracker.com/api/v1/matches/6336526.json"
 # gameJSON <- fromJSON(gameJSON)

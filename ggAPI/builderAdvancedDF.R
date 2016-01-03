@@ -235,7 +235,7 @@ computeUpgrades <- function(adJSON, int, columnIndex, races) {
     upgradesInfo <- list()
     
     # check varaibles are avaiable
-    if(!exists("upgrades")) upgrades <- readUpgradesList()
+    if(!exists("upgrades")) upgrades <<- readUpgradesList()
     len <- max(int)+1
     zergUpgrades <- upgrades[[1]][, 1]
     terranUpgrades <- upgrades[[2]][, 1]
@@ -282,7 +282,7 @@ computeArmy <- function(adJSON, int, columnIndex, races, gameDuration) {
     armyInfo <- list()
     
     ## Read race units & compute variables
-    if(!exists("unitsList")) unitsList <- readUnitsLists()
+    if(!exists("unitsList")) unitsList <<- readUnitsLists()
     len <- max(int)+1
     tUnits <- sum(length(unitsList[[1]][, 1])+length(unitsList[[2]][, 1])+length(unitsList[[3]][, 1]))
     zergNames <- sort(c(unitsList[[1]][, 1], paste0(unitsList[[1]][, 1], "D")))
