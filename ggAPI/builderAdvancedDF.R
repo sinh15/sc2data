@@ -252,20 +252,23 @@ computeUpgrades <- function(adJSON, int, columnIndex, races) {
         pUpgrades <- as.data.frame(matrix(data = rep(NA, len*totalLength), ncol = totalLength, nrow = len))
         names(pUpgrades) <- c(zergUpgrades, terranUpgrades, protossUpgrades)
         
-        ## Create 0s depending on RACE
-        if(races[i] == "Z") {
-            pUpgrades[, 1:zLength] <- 0
-        } else if(races[i] == "T") {
-            pUpgrades[, (zLength+1):(zLength+tLength)] <- 0
-        } else {
-            pUpgrades[, (zLength+tLength+1):(zLength+tLength+pLength)] <- 0
+        if(length(xi) > 0) {
+            
+            ## Create 0s depending on RACE
+            if(races[i] == "Z") {
+                pUpgrades[, 1:zLength] <- 0
+            } else if(races[i] == "T") {
+                pUpgrades[, (zLength+1):(zLength+tLength)] <- 0
+            } else {
+                pUpgrades[, (zLength+tLength+1):(zLength+tLength+pLength)] <- 0
+            }
+            
+            ## add upgrades
+            for(j in c(1:dim(xi)[1])) {
+                pUpgrades[floor(as.numeric(xi[j, 2])/(16*30)+1), xi[j, 1]] <- 1
+            }
         }
-        
-        ## add upgrades
-        for(j in c(1:dim(xi)[1])) {
-            pUpgrades[floor(as.numeric(xi[j, 2])/(16*30)+1), xi[j, 1]] <- 1
-        }
-        
+            
         ## add uplayer upgrades to list
         if(i == 1) upgradesInfo$p1 <- pUpgrades
         else upgradesInfo$p2 <- pUpgrades

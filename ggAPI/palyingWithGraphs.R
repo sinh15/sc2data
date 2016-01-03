@@ -152,3 +152,35 @@ qplot(supply.currentSupply, data = df)
 x <- mutate(dd, pSpending = ifelse(p1_name=="sinH", p1_spending_quotient, p2_spending_quotient))
 qplot(matchup, pSpending, data = x, geom = "boxplot")
 
+## TRYING FACETS
+x <- mutate(dd, pSpending = ifelse(p1_name=="sinH", p1_spending_quotient, p2_spending_quotient)) %>%
+     mutate(oSpending = ifelse(p1_name == "sinH", p2_spending_quotient, p1_spending_quotient)) %>%
+     mutate(pWin = ifelse(p1_name == "sinH", p1_win, p2_win))
+qplot(pSpending, oSpending, data = x, facets = matchup ~ .)
+qplot(pSpending, oSpending, data = x, facets = matchup ~ pWin)
+
+## trying "density". SELF SQ based on win / defeat
+x <- mutate(dd, pSpending = ifelse(p1_name=="sinH", p1_spending_quotient, p2_spending_quotient)) %>%
+     mutate(pWin = ifelse(p1_name == "sinH", p1_win, p2_win))
+x$pWin <- as.factor(x$pWin)
+qplot(pSpending, data = x, geom = "density", color = pWin)
+
+## "density 2" check OPONENT spending
+x <- mutate(dd, pSpending = ifelse(p1_name=="sinH", p1_spending_quotient, p2_spending_quotient)) %>%
+     mutate(oSpending = ifelse(p1_name == "sinH", p2_spending_quotient, p1_spending_quotient)) %>%
+     mutate(pWin = ifelse(p1_name == "sinH", p1_win, p2_win))
+x$pWin <- as.factor(x$pWin)
+qplot(oSpending, data = x, geom = "density", color = pWin)
+
+## "density 3" check SELF SQ based on matchup
+x <- mutate(dd, pSpending = ifelse(p1_name=="sinH", p1_spending_quotient, p2_spending_quotient)) %>%
+    mutate(pWin = ifelse(p1_name == "sinH", p1_win, p2_win))
+x$pWin <- as.factor(x$pWin)
+qplot(pSpending, data = x, geom = "density", color = pWin, facets = . ~ matchup)
+
+## trying SHAPE for quantiative graphs
+x <- mutate(dd, pCollected = ifelse(p1_name == "sinH", p1_avg_collected, p2_avg_collected)) %>%
+     mutate(pUnspent = ifelse(p1_name == "sinH", p1_avgUnspent, p2_avgUnspent)) %>%
+     mutate(pWin = ifelse(p1_name == "sinH", p1_win, p2_win))
+x$pWin <- as.factor(x$pWin)
+qplot(pCollected, pUnspent, data = x, shape = pWin, color = pWin, geom = c("point", "smooth"))

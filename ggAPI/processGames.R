@@ -19,7 +19,7 @@ processGame <- function(id, upload) {
     df <<- rbind(df, gameAdvanced)
 }
 
-readGamesGGTracker <- function(id, upload, max = 20) {
+readGamesGGTracker <- function(id, upload, max = 50) {
     ##sinHID <- 1586656
     
     upToDate <- FALSE
